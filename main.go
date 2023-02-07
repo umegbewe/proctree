@@ -2,46 +2,84 @@ package main
 
 import (
 	"fmt"
-	"sort"
+	"strconv"
 
 	"github.com/shirou/gopsutil/process"
 )
 
-var processTree = make(map[int32]*process.Process)
-
 func main() {
 	processes, _ := process.Processes()
-
-	var processMap = make(map[int32][]int32)
-
-	for _, proc := range processes {
-		pid := proc.Pid
-		ppid, _ := proc.Ppid()
-		processMap[ppid] = append(processMap[ppid], pid)
-		processTree[pid] = proc
+	processMap := make(map[int32]*process.Process)
+	for _, p := range processes {
+		processMap[p.Pid] = p
 	}
 
-	for pid, proc := range processTree {
-		if _, ok := processMap[pid]; !ok {
-			printProcess(proc, 0, processMap)
+	for _, p := range processes {
+		pid := p.Pid
+		_, err := p.Ppid()
+		if err != nil {
+			fmt.Println("Error while getting parent process ID:", err)
+			return
+		}
+
+		for i := 0; i < getDepth(processMap, pid); i++ {
+			fmt.Print("    ")
+		}
+
+		name, err := p.Name()
+		if err != nil {
+			fmt.Println("Error while getting process name:", err)
+			return
+		}
+
+		fmt.Print("└─" + name + "───")
+		children, _ := p.Children()
+		if len(children) == 0 {
+			fmt.Println("1*[{" + name + "}]")
+		} else {
+			fmt.Println(strconv.Itoa(len(children)) + "*[{" + name + "}]")
+			for _, child := range children {
+				childPID := child.Pid
+				displayProcessTree(processMap, childPID, getDepth(processMap, pid)+1)
+			}
 		}
 	}
 }
 
-func printProcess(proc *process.Process, depth int, processMap map[int32][]int32) {
-	name, _ := proc.Name()
-	fmt.Printf("%s%d %s\n", indent(depth), proc.Pid, name)
-	if children, ok := processMap[proc.Pid]; ok {
-		sort.Slice(children, func(i, j int) bool {
-			return children[i] < children[j]
-		})
-		for _, childPid := range children {
-			childProc := processTree[childPid]
-			printProcess(childProc, depth+1, processMap)
+func getDepth(processMap map[int32]*process.Process, pid int32) int {
+	depth := 0
+	for {
+		ppid, _ := processMap[pid].Ppid()
+		if ppid == 0 {
+			break
 		}
+		depth++
+		pid = ppid
 	}
+	return depth
 }
 
-func indent(depth int) string {
-	return fmt.Sprintf("%s", fmt.Sprintf("%s", "  ")[:depth*2])
+func displayProcessTree(processMap map[int32]*process.Process, pid int32, depth int) {
+	p := processMap[pid]
+	for i := 0; i < depth; i++ {
+		fmt.Print("    ")
+	}
+
+	name, err := p.Name()
+	if err != nil {
+		fmt.Println("Error while getting process name:", err)
+		return
+	}
+
+	fmt.Print("└─" + name + "───")
+	children, _ := p.Children()
+	if len(children) == 0 {
+		fmt.Println("1*[{" + name + "}]")
+	} else {
+		fmt.Println(strconv.Itoa(len(children)) + "*[{" + name + "}]")
+		for _, child := range children {
+			childPID := child.Pid
+			displayProcessTree(processMap, childPID, depth+1)
+		}
+	}
 }
