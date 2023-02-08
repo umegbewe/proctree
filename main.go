@@ -22,27 +22,7 @@ func main() {
 			return
 		}
 
-		for i := 0; i < getDepth(processMap, pid); i++ {
-			fmt.Print("    ")
-		}
-
-		name, err := p.Name()
-		if err != nil {
-			fmt.Println("Error while getting process name:", err)
-			return
-		}
-
-		fmt.Print("└─" + name + "───")
-		children, _ := p.Children()
-		if len(children) == 0 {
-			fmt.Println("1*[{" + name + "}]")
-		} else {
-			fmt.Println(strconv.Itoa(len(children)) + "*[{" + name + "}]")
-			for _, child := range children {
-				childPID := child.Pid
-				displayProcessTree(processMap, childPID, getDepth(processMap, pid)+1)
-			}
-		}
+		displayProcessTree(processMap, pid, 0)
 	}
 }
 
@@ -79,7 +59,7 @@ func displayProcessTree(processMap map[int32]*process.Process, pid int32, depth 
 		fmt.Println(strconv.Itoa(len(children)) + "*[{" + name + "}]")
 		for _, child := range children {
 			childPID := child.Pid
-			displayProcessTree(processMap, childPID, depth+1)
+			displayProcessTree(processMap, childPID, getDepth(processMap, pid)+1)
 		}
 	}
 }
