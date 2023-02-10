@@ -1,4 +1,4 @@
-module github.com/umegbewe/pstree
+module github.com/umegbewe/proctree
 
 go 1.19
 
