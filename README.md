@@ -3,7 +3,7 @@ View processes in tree like manner
 
 ## Usage
 
-To run the tool, simply run the binary. No additional flags or arguments are required. The tree structure will be printed in the terminal.
+To run the tool, simply run the [binary](https://github.com/umegbewe/proctree/releases). No additional flags or arguments are required. The tree structure will be printed in the terminal.
 
 ## Features
 
